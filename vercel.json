@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd testdrop && npm install && npx vite build",
-  "outputDirectory": "testdrop/dist",
+  "buildCommand": "npm install && npx vite build",
+  "outputDirectory": "dist",
   "framework": "vite"
 }
