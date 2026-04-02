@@ -35,7 +35,7 @@ export default function NewProject() {
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.card} style={{maxWidth: 500}}>
+      <div className={styles.card} style={{maxWidth:500}}>
         <h2 className={styles.title}>Nuevo proyecto</h2>
         <p className={styles.sub}>Publica tu app o juego para encontrar testers</p>
         <form onSubmit={handleSubmit}>
@@ -45,31 +45,44 @@ export default function NewProject() {
           </div>
           <div className={styles.field}>
             <label>Descripción</label>
-            <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Qué hace tu proyecto y qué feedback buscas..." rows={3} style={{resize:'vertical', width:'100%', padding:'9px 12px', border:'0.5px solid var(--color-border-strong)', borderRadius:'var(--radius-md)', fontFamily:'var(--font-sans)', fontSize:14}} />
+            <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Qué hace tu proyecto y qué feedback buscas..." rows={3} style={{resize:'vertical',width:'100%',padding:'9px 12px',border:'0.5px solid #ccc',borderRadius:8,fontFamily:'inherit',fontSize:14,outline:'none'}} />
           </div>
           <div className={styles.field}>
             <label>Tipo</label>
-            <div style={{display:'flex', gap:10}}>
+            <div style={{display:'flex',gap:10}}>
               {['app','game'].map(t => (
                 <button key={t} type="button" onClick={() => setForm({...form, type: t})}
-                  style={{flex:1, padding:'9px', borderRadius:'var(--radius-md)', border:'0.5px solid var(--color-border)', background: form.type===t?'var(--color-text)':'transparent', color:form.type===t?'var(--color-bg)':'var(--color-text-secondary)', fontSize:13, cursor:'pointer'}}>
-                  {t === 'app' ? 'Aplicación' : 'Juego'}
+                  style={{
+                    flex:1, padding:'9px', borderRadius:8, cursor:'pointer', fontSize:13,
+                    border: form.type===t ? '2px solid #1a1a18' : '1px solid #ccc',
+                    background: form.type===t ? '#1a1a18' : '#fff',
+                    color: form.type===t ? '#fff' : '#666',
+                    fontWeight: form.type===t ? 500 : 400
+                  }}>
+                  {t === 'app' ? '📱 Aplicación' : '🎮 Juego'}
                 </button>
               ))}
             </div>
           </div>
           <div className={styles.field}>
             <label>Plataformas</label>
-            <div className={styles.pillSelect}>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>
               {PLATFORMS.map(p => (
-                <button key={p} type="button"
-                  className={`${styles.pillBtn} ${platforms.includes(p) ? styles.pillActive : ''}`}
-                  onClick={() => togglePlatform(p)}>{p}</button>
+                <button key={p} type="button" onClick={() => togglePlatform(p)}
+                  style={{
+                    padding:'6px 16px', borderRadius:100, cursor:'pointer', fontSize:12,
+                    border: platforms.includes(p) ? '2px solid #1a1a18' : '1px solid #ccc',
+                    background: platforms.includes(p) ? '#1a1a18' : '#fff',
+                    color: platforms.includes(p) ? '#fff' : '#666',
+                    fontWeight: platforms.includes(p) ? 500 : 400
+                  }}>
+                  {p}
+                </button>
               ))}
             </div>
           </div>
           {error && <div className={styles.error}>{error}</div>}
-          <button type="submit" className="btn-primary" style={{width:'100%', padding:'11px', marginTop:8}} disabled={submitting}>
+          <button type="submit" className="btn-primary" style={{width:'100%',padding:'11px',marginTop:8}} disabled={submitting}>
             {submitting ? 'Publicando...' : 'Publicar proyecto'}
           </button>
         </form>
