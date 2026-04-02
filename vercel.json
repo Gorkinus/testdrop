@@ -1,6 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "testdrop/dist",
-  "framework": "vite",
-  "rootDirectory": "testdrop"
+  "framework": "vite"
 }
