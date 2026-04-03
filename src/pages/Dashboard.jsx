@@ -11,15 +11,38 @@ export default function Dashboard() {
   const [projects, setProjects] = useState([])
   const [testers, setTesters] = useState({})
   const [testerNames, setTesterNames] = useState({})
+  const [testerIds, setTesterIds] = useState({})
   const [expanded, setExpanded] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const [onlineUsers, setOnlineUsers] = useState({})
+  const [onlineCount, setOnlineCount] = useState(0)
 
   useEffect(() => {
-    if (profile) fetchData()
+    if (profile) { fetchData(); trackPresence() }
   }, [profile])
+
+  function trackPresence() {
+    const channel = supabase.channel('dashboard-presence', {
+      config: { presence: { key: user.id } }
+    })
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        const online = {}
+        Object.values(state).flat().forEach(p => { online[p.user_id] = p.name })
+        setOnlineUsers(online)
+        setOnlineCount(Object.keys(online).length)
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: user.id, name: profile?.name })
+        }
+      })
+    return () => supabase.removeChannel(channel)
+  }
 
   async function fetchData() {
     const { data } = await supabase
@@ -43,9 +66,10 @@ export default function Dashboard() {
     if (testerNames[projectId]) return
     const { data } = await supabase
       .from('project_testers')
-      .select('tester_id, profiles(name)')
+      .select('tester_id, profiles(id, name)')
       .eq('project_id', projectId)
     setTesterNames(prev => ({ ...prev, [projectId]: (data || []).map(d => d.profiles?.name || 'Sin nombre') }))
+    setTesterIds(prev => ({ ...prev, [projectId]: (data || []).map(d => d.profiles?.id) }))
   }
 
   function startEdit(project) {
@@ -83,6 +107,7 @@ export default function Dashboard() {
 
   const myProjects = projects.filter(p => p.developer_id === user.id)
   const joinedProjects = projects.filter(p => p.developer_id !== user.id)
+  const otherOnline = Object.entries(onlineUsers).filter(([id]) => id !== user.id)
 
   if (loading) return <div style={{ padding: '3rem 2rem', color: '#9e9e9a', fontSize: 14 }}>Cargando...</div>
 
@@ -105,6 +130,7 @@ export default function Dashboard() {
           { label: 'Abiertos', value: myProjects.filter(p => p.status === 'open').length },
           { label: 'Testeando', value: joinedProjects.length },
           { label: 'Total testers', value: Object.values(testers).reduce((a, b) => a + b, 0) },
+          { label: 'Conectados ahora', value: onlineCount },
         ].map(s => (
           <div key={s.label} style={{ background: '#f7f6f3', borderRadius: 8, padding: '1rem' }}>
             <div style={{ fontSize: 12, color: '#6b6b67', marginBottom: 4 }}>{s.label}</div>
@@ -112,6 +138,20 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {otherOnline.length > 0 && (
+        <div style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1.25rem', marginBottom: '2rem' }}>
+          <p style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Usuarios conectados ahora</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {otherOnline.map(([id, name]) => (
+              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: '#f7f6f3', borderRadius: 100 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b6d11' }} />
+                <span style={{ fontSize: 13 }}>{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {myProjects.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
@@ -214,14 +254,22 @@ export default function Dashboard() {
                           <p style={{ fontSize: 13, color: '#9e9e9a' }}>Aún no hay testers apuntados.</p>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {testerNames[project.id].map((name, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f7f6f3', borderRadius: 8 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e0e0db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: '#6b6b67' }}>
-                                  {name[0]?.toUpperCase()}
+                            {testerNames[project.id].map((name, i) => {
+                              const testerId = testerIds[project.id]?.[i]
+                              const isOnline = testerId && onlineUsers[testerId]
+                              return (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f7f6f3', borderRadius: 8 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e0e0db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: '#6b6b67', position: 'relative' }}>
+                                      {name[0]?.toUpperCase()}
+                                      {isOnline && <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: '#3b6d11', border: '2px solid #f7f6f3' }} />}
+                                    </div>
+                                    <span style={{ fontSize: 14 }}>{name}</span>
+                                    {isOnline && <span style={{ fontSize: 11, color: '#3b6d11', fontFamily: 'monospace' }}>conectado</span>}
+                                  </div>
                                 </div>
-                                <span style={{ fontSize: 14 }}>{name}</span>
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         )}
                       </div>
