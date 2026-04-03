@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
 export default function Projects() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const [projects, setProjects] = useState([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -53,9 +53,7 @@ export default function Projects() {
           <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Proyectos</h1>
           <p style={{ fontSize: 14, color: '#6b6b67' }}>{filtered.length} proyecto{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        {profile?.role === 'developer' && (
-          <Link to="/new-project"><button className="btn-primary">+ Publicar proyecto</button></Link>
-        )}
+        {user && <Link to="/new-project"><button className="btn-primary">+ Publicar proyecto</button></Link>}
       </div>
 
       <div style={{ display: 'flex', gap: 0, border: '0.5px solid #e0e0db', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: '1.5rem' }}>
@@ -75,9 +73,7 @@ export default function Projects() {
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
           <p style={{ color: '#9e9e9a', fontSize: 14 }}>No hay proyectos todavía.</p>
-          {profile?.role === 'developer' && (
-            <Link to="/new-project"><button className="btn-outline" style={{ marginTop: '1rem' }}>Sé el primero en publicar</button></Link>
-          )}
+          {user && <Link to="/new-project"><button className="btn-outline" style={{ marginTop: '1rem' }}>Sé el primero en publicar</button></Link>}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 16 }}>
@@ -114,7 +110,7 @@ export default function Projects() {
                 </a>
               )}
 
-              {user && profile?.role === 'tester' && project.status === 'open' && (
+              {user && project.developer_id !== user.id && project.status === 'open' && (
                 <button
                   style={{
                     fontSize: 13, padding: '8px', borderRadius: 8, cursor: 'pointer',

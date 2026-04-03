@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }
 
-  async function signUp({ email, password, name, role, platforms }) {
+  async function signUp({ email, password, name }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
 
@@ -38,8 +38,8 @@ export function AuthProvider({ children }) {
       const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         name,
-        role,
-        platforms: platforms || []
+        role: 'user',
+        platforms: []
       })
       if (profileError) throw profileError
     }
