@@ -19,14 +19,17 @@ export default function Chat() {
     fetchMessages()
 
     const subscription = supabase
-      .channel('messages')
+      .channel(`messages:${projectId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `project_id=eq.${projectId}`
       }, payload => {
-        setMessages(prev => [...prev, payload.new])
+        setMessages(prev => {
+          if (prev.find(m => m.id === payload.new.id)) return prev
+          return [...prev, { ...payload.new, profiles: { name: profile?.name } }]
+        })
       })
       .subscribe()
 
@@ -55,12 +58,24 @@ export default function Chat() {
   async function sendMessage(e) {
     e.preventDefault()
     if (!text.trim()) return
+    const content = text.trim()
+    setText('')
+
+    const tempMsg = {
+      id: Date.now(),
+      project_id: projectId,
+      sender_id: user.id,
+      content,
+      created_at: new Date().toISOString(),
+      profiles: { name: profile?.name }
+    }
+    setMessages(prev => [...prev, tempMsg])
+
     await supabase.from('messages').insert({
       project_id: projectId,
       sender_id: user.id,
-      content: text.trim()
+      content
     })
-    setText('')
   }
 
   function timeStr(date) {
