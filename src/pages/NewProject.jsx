@@ -9,7 +9,7 @@ const PLATFORMS = ['Android', 'iOS', 'PC / Mac', 'Juegos']
 export default function NewProject() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ title: '', description: '', type: 'app' })
+  const [form, setForm] = useState({ title: '', description: '', type: 'app', download_url: '' })
   const [platforms, setPlatforms] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -27,7 +27,8 @@ export default function NewProject() {
       description: form.description,
       platforms,
       type: form.type,
-      status: 'open'
+      status: 'open',
+      download_url: form.download_url
     })
     if (error) { setError(error.message); setSubmitting(false) }
     else navigate('/dashboard')
@@ -46,6 +47,10 @@ export default function NewProject() {
           <div className={styles.field}>
             <label>Descripción</label>
             <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Qué hace tu proyecto y qué feedback buscas..." rows={3} style={{resize:'vertical',width:'100%',padding:'9px 12px',border:'0.5px solid #ccc',borderRadius:8,fontFamily:'inherit',fontSize:14,outline:'none'}} />
+          </div>
+          <div className={styles.field}>
+            <label>Enlace de descarga</label>
+            <input value={form.download_url} onChange={e => setForm({...form, download_url: e.target.value})} placeholder="https://drive.google.com/... o enlace de Play Store" />
           </div>
           <div className={styles.field}>
             <label>Tipo</label>
