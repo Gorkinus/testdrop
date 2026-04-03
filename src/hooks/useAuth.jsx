@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const AuthContext = createContext({})
+const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -33,20 +33,24 @@ export function AuthProvider({ children }) {
   async function signUp({ email, password, name, role, platforms }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
+
     if (data.user) {
-      await supabase.from('profiles').insert({
+      const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         name,
         role,
         platforms: platforms || []
       })
+      if (profileError) throw profileError
     }
+
     return data
   }
 
   async function signIn({ email, password }) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
+    return data
   }
 
   async function signOut() {
@@ -55,7 +59,7 @@ export function AuthProvider({ children }) {
 
   async function resetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/reset-password'
+      redirectTo: `${window.location.origin}/reset-password`
     })
     if (error) throw error
   }
@@ -67,4 +71,6 @@ export function AuthProvider({ children }) {
   )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export function useAuth() {
+  return useContext(AuthContext)
+}
