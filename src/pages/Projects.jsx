@@ -107,10 +107,17 @@ export default function Projects() {
                 <p style={{ fontSize: 13, color: '#6b6b67', lineHeight: 1.5 }}>{project.description}</p>
               )}
 
+              {project.download_url && (
+                <a href={project.download_url} target="_blank" rel="noreferrer"
+                  style={{ display: 'block', textAlign: 'center', padding: '8px', borderRadius: 8, background: '#1a1a18', color: '#fff', fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                  ⬇ Descargar / Probar
+                </a>
+              )}
+
               {user && profile?.role === 'tester' && project.status === 'open' && (
                 <button
                   style={{
-                    marginTop: 'auto', fontSize: 13, padding: '8px', borderRadius: 8, cursor: 'pointer',
+                    fontSize: 13, padding: '8px', borderRadius: 8, cursor: 'pointer',
                     border: joined.includes(project.id) ? '0.5px solid #e0e0db' : '0.5px solid #1a1a18',
                     background: joined.includes(project.id) ? '#eaf3de' : 'transparent',
                     color: joined.includes(project.id) ? '#3b6d11' : '#1a1a18'
