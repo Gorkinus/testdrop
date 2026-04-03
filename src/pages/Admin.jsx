@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import styles from './Auth.module.css'
 
 export default function Admin() {
   const { profile } = useAuth()
@@ -30,7 +29,7 @@ export default function Admin() {
 
   async function deleteUser(id) {
     if (!confirm('¿Seguro que quieres borrar este usuario?')) return
-    await supabase.from('profiles').delete().eq('id', id)
+    await supabase.rpc('delete_user_completely', { user_id: id })
     setUsers(prev => prev.filter(u => u.id !== id))
   }
 
@@ -57,8 +56,6 @@ export default function Admin() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 12, marginBottom: '2rem' }}>
         {[
           { label: 'Total usuarios', value: users.length },
-          { label: 'Desarrolladores', value: users.filter(u => u.role === 'developer').length },
-          { label: 'Testers', value: users.filter(u => u.role === 'tester').length },
           { label: 'Total proyectos', value: projects.length },
         ].map(s => (
           <div key={s.label} style={{ background: '#f7f6f3', borderRadius: 8, padding: '1rem' }}>
@@ -82,14 +79,13 @@ export default function Admin() {
 
       {tab === 'users' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {users.map(user => (
+          {users.length === 0 ? (
+            <p style={{ color: '#9e9e9a', fontSize: 14, textAlign: 'center', padding: '2rem' }}>No hay usuarios.</p>
+          ) : users.map(user => (
             <div key={user.id} style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 14, fontWeight: 500 }}>{user.name}</span>
-                  <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '2px 8px', borderRadius: 100, background: user.role === 'developer' ? '#e6f1fb' : '#eaf3de', color: user.role === 'developer' ? '#185fa5' : '#3b6d11' }}>
-                    {user.role === 'developer' ? 'dev' : 'tester'}
-                  </span>
                   {user.is_admin && <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '2px 8px', borderRadius: 100, background: '#faeeda', color: '#ba7517' }}>admin</span>}
                 </div>
                 <div style={{ fontSize: 12, color: '#9e9e9a' }}>{new Date(user.created_at).toLocaleDateString('es-ES')}</div>
@@ -111,7 +107,9 @@ export default function Admin() {
 
       {tab === 'projects' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {projects.map(project => (
+          {projects.length === 0 ? (
+            <p style={{ color: '#9e9e9a', fontSize: 14, textAlign: 'center', padding: '2rem' }}>No hay proyectos.</p>
+          ) : projects.map(project => (
             <div key={project.id} style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
