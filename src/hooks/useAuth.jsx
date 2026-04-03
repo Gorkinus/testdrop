@@ -35,7 +35,7 @@ export function AuthProvider({ children }) {
     if (error) throw error
 
     if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         name,
         role: 'user',
