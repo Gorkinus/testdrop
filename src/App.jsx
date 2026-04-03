@@ -11,6 +11,7 @@ import NewProject from './pages/NewProject'
 import Profile from './pages/Profile'
 import ResetPassword from './pages/ResetPassword'
 import Admin from './pages/Admin'
+import Chat from './pages/Chat'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/chat/:projectId" element={<Chat />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
