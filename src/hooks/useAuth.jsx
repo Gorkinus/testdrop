@@ -31,19 +31,14 @@ export function AuthProvider({ children }) {
   }
 
   async function signUp({ email, password, name }) {
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name }
+      }
+    })
     if (error) throw error
-
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: data.user.id,
-        name,
-        role: 'user',
-        platforms: []
-      })
-      if (profileError) throw profileError
-    }
-
     return data
   }
 
