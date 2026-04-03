@@ -4,16 +4,17 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
 export default function Admin() {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const navigate = useNavigate()
   const [users, setUsers] = useState([])
   const [projects, setProjects] = useState([])
   const [tab, setTab] = useState('users')
   const [loading, setLoading] = useState(true)
+  const [onlineCount, setOnlineCount] = useState(0)
 
   useEffect(() => {
     if (profile && !profile.is_admin) navigate('/')
-    if (profile?.is_admin) { fetchUsers(); fetchProjects() }
+    if (profile?.is_admin) { fetchUsers(); fetchProjects(); trackOnline() }
   }, [profile])
 
   async function fetchUsers() {
@@ -27,6 +28,22 @@ export default function Admin() {
     setProjects(data || [])
   }
 
+  function trackOnline() {
+    const channel = supabase.channel('online-users', {
+      config: { presence: { key: user.id } }
+    })
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        setOnlineCount(Object.keys(state).length)
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: user.id, online_at: new Date().toISOString() })
+        }
+      })
+  }
+
   async function deleteUser(id) {
     if (!confirm('¿Seguro que quieres borrar este usuario?')) return
     await supabase.rpc('delete_user_completely', { user_id: id })
@@ -37,11 +54,6 @@ export default function Admin() {
     if (!confirm('¿Seguro que quieres borrar este proyecto?')) return
     await supabase.from('projects').delete().eq('id', id)
     setProjects(prev => prev.filter(p => p.id !== id))
-  }
-
-  async function toggleAdmin(user) {
-    await supabase.from('profiles').update({ is_admin: !user.is_admin }).eq('id', user.id)
-    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_admin: !u.is_admin } : u))
   }
 
   if (loading) return <div style={{ padding: '3rem 2rem', fontSize: 14, color: '#9e9e9a' }}>Cargando...</div>
@@ -57,6 +69,7 @@ export default function Admin() {
         {[
           { label: 'Total usuarios', value: users.length },
           { label: 'Total proyectos', value: projects.length },
+          { label: 'Conectados ahora', value: onlineCount },
         ].map(s => (
           <div key={s.label} style={{ background: '#f7f6f3', borderRadius: 8, padding: '1rem' }}>
             <div style={{ fontSize: 12, color: '#6b6b67', marginBottom: 4 }}>{s.label}</div>
@@ -81,25 +94,21 @@ export default function Admin() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {users.length === 0 ? (
             <p style={{ color: '#9e9e9a', fontSize: 14, textAlign: 'center', padding: '2rem' }}>No hay usuarios.</p>
-          ) : users.map(user => (
-            <div key={user.id} style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          ) : users.map(u => (
+            <div key={u.id} style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>{user.name}</span>
-                  {user.is_admin && <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '2px 8px', borderRadius: 100, background: '#faeeda', color: '#ba7517' }}>admin</span>}
+                  <span style={{ fontSize: 14, fontWeight: 500 }}>{u.name}</span>
+                  {u.is_admin && <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '2px 8px', borderRadius: 100, background: '#faeeda', color: '#ba7517' }}>admin</span>}
                 </div>
-                <div style={{ fontSize: 12, color: '#9e9e9a' }}>{new Date(user.created_at).toLocaleDateString('es-ES')}</div>
+                <div style={{ fontSize: 12, color: '#9e9e9a' }}>{new Date(u.created_at).toLocaleDateString('es-ES')}</div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => toggleAdmin(user)}
-                  style={{ padding: '6px 12px', borderRadius: 8, border: '0.5px solid #e0e0db', background: 'transparent', fontSize: 12, cursor: 'pointer', color: '#6b6b67' }}>
-                  {user.is_admin ? 'Quitar admin' : 'Hacer admin'}
-                </button>
-                <button onClick={() => deleteUser(user.id)}
+              {u.id !== user.id && (
+                <button onClick={() => deleteUser(u.id)}
                   style={{ padding: '6px 12px', borderRadius: 8, border: '0.5px solid #e24b4a', background: 'transparent', fontSize: 12, cursor: 'pointer', color: '#e24b4a' }}>
                   Borrar
                 </button>
-              </div>
+              )}
             </div>
           ))}
         </div>
