@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import NewProject from './pages/NewProject'
 import Profile from './pages/Profile'
 import ResetPassword from './pages/ResetPassword'
+import Admin from './pages/Admin'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/new-project" element={<NewProject />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

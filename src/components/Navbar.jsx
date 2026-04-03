@@ -24,6 +24,7 @@ export default function Navbar() {
         {user ? (
           <>
             <Link to="/dashboard" className={styles.link}>{t.nav.dashboard}</Link>
+            {profile?.is_admin && <Link to="/admin" className={styles.link} style={{color:'#ba7517'}}>Admin</Link>}
             <Link to="/profile" className={styles.link}>{profile?.name}</Link>
             <LangSelector />
             <button className="btn-outline" onClick={handleSignOut} style={{padding:'7px 16px',fontSize:'13px'}}>{t.nav.logout}</button>
