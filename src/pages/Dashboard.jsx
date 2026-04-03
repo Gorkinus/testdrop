@@ -3,11 +3,16 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
+const PLATFORMS = ['Android', 'iOS', 'PC / Mac', 'Juegos']
+
 export default function Dashboard() {
   const { profile, user } = useAuth()
   const [projects, setProjects] = useState([])
   const [testers, setTesters] = useState({})
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (profile) fetchData()
@@ -23,7 +28,7 @@ export default function Dashboard() {
         setTesters(prev => ({ ...prev, [p.id]: count || 0 }))
       }
     } else {
-      const { data } = await supabase.from('project_testers').select('*, projects(*, profiles(name))').eq('tester_id', user.id).order('joined_at', { ascending: false })
+      const { data } = await supabase.from('project_testers').select('*, projects(*)').eq('tester_id', user.id).order('joined_at', { ascending: false })
       setProjects((data || []).map(d => d.projects))
     }
     setLoading(false)
@@ -35,6 +40,32 @@ export default function Dashboard() {
     setProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: newStatus } : p))
   }
 
+  function startEdit(project) {
+    setEditing(project.id)
+    setEditForm({
+      title: project.title,
+      description: project.description || '',
+      type: project.type || 'app',
+      platforms: project.platforms || [],
+      status: project.status
+    })
+  }
+
+  function togglePlatform(p) {
+    setEditForm(prev => ({
+      ...prev,
+      platforms: prev.platforms.includes(p) ? prev.platforms.filter(x => x !== p) : [...prev.platforms, p]
+    }))
+  }
+
+  async function saveEdit(projectId) {
+    setSaving(true)
+    await supabase.from('projects').update(editForm).eq('id', projectId)
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...editForm } : p))
+    setEditing(null)
+    setSaving(false)
+  }
+
   function timeAgo(date) {
     const days = Math.floor((Date.now() - new Date(date)) / 86400000)
     if (days === 0) return 'hoy'
@@ -42,14 +73,14 @@ export default function Dashboard() {
     return `hace ${days} días`
   }
 
-  if (loading) return <div style={{ padding: '3rem 2rem', color: 'var(--gray-400)', fontSize: 14 }}>Cargando...</div>
+  if (loading) return <div style={{ padding: '3rem 2rem', color: '#9e9e9a', fontSize: 14 }}>Cargando...</div>
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '2.5rem 2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Hola, {profile?.name}</h1>
-          <p style={{ fontSize: 14, color: 'var(--gray-600)' }}>{profile?.role === 'developer' ? 'Panel de desarrollador' : 'Proyectos en los que participas'}</p>
+          <p style={{ fontSize: 14, color: '#6b6b67' }}>{profile?.role === 'developer' ? 'Panel de desarrollador' : 'Proyectos en los que participas'}</p>
         </div>
         {profile?.role === 'developer' && <Link to="/new-project"><button className="btn-primary">+ Nuevo proyecto</button></Link>}
       </div>
@@ -61,8 +92,8 @@ export default function Dashboard() {
             { label: 'Abiertos', value: projects.filter(p => p.status === 'open').length },
             { label: 'Total testers', value: Object.values(testers).reduce((a, b) => a + b, 0) },
           ].map(s => (
-            <div key={s.label} style={{ background: 'var(--gray-50)', borderRadius: 8, padding: '1rem' }}>
-              <div style={{ fontSize: 12, color: 'var(--gray-600)', marginBottom: 4 }}>{s.label}</div>
+            <div key={s.label} style={{ background: '#f7f6f3', borderRadius: 8, padding: '1rem' }}>
+              <div style={{ fontSize: 12, color: '#6b6b67', marginBottom: 4 }}>{s.label}</div>
               <div style={{ fontSize: 24, fontWeight: 500 }}>{s.value}</div>
             </div>
           ))}
@@ -71,7 +102,7 @@ export default function Dashboard() {
 
       {projects.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <p style={{ color: 'var(--gray-400)', fontSize: 14, marginBottom: '1rem' }}>
+          <p style={{ color: '#9e9e9a', fontSize: 14, marginBottom: '1rem' }}>
             {profile?.role === 'developer' ? 'Aún no has publicado ningún proyecto.' : 'Aún no te has apuntado a ningún proyecto.'}
           </p>
           <Link to={profile?.role === 'developer' ? '/new-project' : '/projects'}>
@@ -81,23 +112,85 @@ export default function Dashboard() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {projects.map(project => project && (
-            <div key={project.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 500 }}>{project.title}</h3>
-                  <span className={`badge badge-${project.status}`}>{project.status === 'open' ? 'abierto' : 'cerrado'}</span>
+            <div key={project.id} style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1.25rem' }}>
+              {editing === project.id ? (
+                <div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Título</label>
+                    <input value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
+                      style={{ width: '100%', padding: '8px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 14, fontFamily: 'inherit' }} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Descripción</label>
+                    <textarea value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})}
+                      rows={3} style={{ width: '100%', padding: '8px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Tipo</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {['app', 'game'].map(t => (
+                        <button key={t} type="button" onClick={() => setEditForm({...editForm, type: t})}
+                          style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.type === t ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.type === t ? '#1a1a18' : '#fff', color: editForm.type === t ? '#fff' : '#666' }}>
+                          {t === 'app' ? '📱 Aplicación' : '🎮 Juego'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Plataformas</label>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {PLATFORMS.map(p => (
+                        <button key={p} type="button" onClick={() => togglePlatform(p)}
+                          style={{ padding: '5px 14px', borderRadius: 100, cursor: 'pointer', fontSize: 12, border: editForm.platforms.includes(p) ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.platforms.includes(p) ? '#1a1a18' : '#fff', color: editForm.platforms.includes(p) ? '#fff' : '#666' }}>
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Estado</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {['open', 'closed'].map(s => (
+                        <button key={s} type="button" onClick={() => setEditForm({...editForm, status: s})}
+                          style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.status === s ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.status === s ? '#1a1a18' : '#fff', color: editForm.status === s ? '#fff' : '#666' }}>
+                          {s === 'open' ? '🟢 Abierto' : '🔴 Cerrado'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-primary" style={{ flex: 1, padding: '9px' }} onClick={() => saveEdit(project.id)} disabled={saving}>
+                      {saving ? 'Guardando...' : 'Guardar cambios'}
+                    </button>
+                    <button className="btn-outline" style={{ flex: 1, padding: '9px' }} onClick={() => setEditing(null)}>
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                  {(project.platforms || []).map(p => <span key={p} className="pill">{p}</span>)}
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 500 }}>{project.title}</h3>
+                      <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '3px 8px', borderRadius: 100, background: project.status === 'open' ? '#eaf3de' : '#f0ede8', color: project.status === 'open' ? '#3b6d11' : '#9e9e9a' }}>
+                        {project.status === 'open' ? 'abierto' : 'cerrado'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                      {(project.platforms || []).map(p => (
+                        <span key={p} style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 100, border: '0.5px solid #e0e0db', color: '#6b6b67' }}>{p}</span>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 12, color: '#9e9e9a' }}>
+                      {timeAgo(project.created_at)} · {testers[project.id] || 0} tester{testers[project.id] !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  {profile?.role === 'developer' && (
+                    <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => startEdit(project)}>
+                      Editar
+                    </button>
+                  )}
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--gray-400)' }}>
-                  {timeAgo(project.created_at)}{profile?.role === 'developer' && ` · ${testers[project.id] || 0} tester${testers[project.id] !== 1 ? 's' : ''}`}
-                </p>
-              </div>
-              {profile?.role === 'developer' && (
-                <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => toggleStatus(project)}>
-                  {project.status === 'open' ? 'Cerrar proyecto' : 'Reabrir proyecto'}
-                </button>
               )}
             </div>
           ))}
