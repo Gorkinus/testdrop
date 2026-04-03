@@ -8,6 +8,7 @@ import Register from './pages/Register'
 import Projects from './pages/Projects'
 import Dashboard from './pages/Dashboard'
 import NewProject from './pages/NewProject'
+import Profile from './pages/Profile'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/new-project" element={<NewProject />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

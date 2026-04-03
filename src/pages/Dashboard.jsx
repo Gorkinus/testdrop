@@ -9,6 +9,8 @@ export default function Dashboard() {
   const { profile, user } = useAuth()
   const [projects, setProjects] = useState([])
   const [testers, setTesters] = useState({})
+  const [testerNames, setTesterNames] = useState({})
+  const [expanded, setExpanded] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [editForm, setEditForm] = useState({})
@@ -34,10 +36,15 @@ export default function Dashboard() {
     setLoading(false)
   }
 
-  async function toggleStatus(project) {
-    const newStatus = project.status === 'open' ? 'closed' : 'open'
-    await supabase.from('projects').update({ status: newStatus }).eq('id', project.id)
-    setProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: newStatus } : p))
+  async function loadTesters(projectId) {
+    if (expanded === projectId) { setExpanded(null); return }
+    setExpanded(projectId)
+    if (testerNames[projectId]) return
+    const { data } = await supabase
+      .from('project_testers')
+      .select('tester_id, profiles(name)')
+      .eq('project_id', projectId)
+    setTesterNames(prev => ({ ...prev, [projectId]: (data || []).map(d => d.profiles?.name || 'Sin nombre') }))
   }
 
   function startEdit(project) {
@@ -82,7 +89,10 @@ export default function Dashboard() {
           <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Hola, {profile?.name}</h1>
           <p style={{ fontSize: 14, color: '#6b6b67' }}>{profile?.role === 'developer' ? 'Panel de desarrollador' : 'Proyectos en los que participas'}</p>
         </div>
-        {profile?.role === 'developer' && <Link to="/new-project"><button className="btn-primary">+ Nuevo proyecto</button></Link>}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {profile?.role === 'developer' && <Link to="/new-project"><button className="btn-primary">+ Nuevo proyecto</button></Link>}
+          <Link to="/profile"><button className="btn-outline">Mi perfil</button></Link>
+        </div>
       </div>
 
       {profile?.role === 'developer' && (
@@ -168,27 +178,58 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 500 }}>{project.title}</h3>
-                      <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '3px 8px', borderRadius: 100, background: project.status === 'open' ? '#eaf3de' : '#f0ede8', color: project.status === 'open' ? '#3b6d11' : '#9e9e9a' }}>
-                        {project.status === 'open' ? 'abierto' : 'cerrado'}
-                      </span>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 500 }}>{project.title}</h3>
+                        <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '3px 8px', borderRadius: 100, background: project.status === 'open' ? '#eaf3de' : '#f0ede8', color: project.status === 'open' ? '#3b6d11' : '#9e9e9a' }}>
+                          {project.status === 'open' ? 'abierto' : 'cerrado'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                        {(project.platforms || []).map(p => (
+                          <span key={p} style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 100, border: '0.5px solid #e0e0db', color: '#6b6b67' }}>{p}</span>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: 12, color: '#9e9e9a' }}>
+                        {timeAgo(project.created_at)} · {testers[project.id] || 0} tester{testers[project.id] !== 1 ? 's' : ''}
+                      </p>
                     </div>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                      {(project.platforms || []).map(p => (
-                        <span key={p} style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 100, border: '0.5px solid #e0e0db', color: '#6b6b67' }}>{p}</span>
-                      ))}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {profile?.role === 'developer' && (
+                        <>
+                          <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => loadTesters(project.id)}>
+                            {expanded === project.id ? 'Ocultar testers' : 'Ver testers'}
+                          </button>
+                          <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => startEdit(project)}>
+                            Editar
+                          </button>
+                        </>
+                      )}
                     </div>
-                    <p style={{ fontSize: 12, color: '#9e9e9a' }}>
-                      {timeAgo(project.created_at)} · {testers[project.id] || 0} tester{testers[project.id] !== 1 ? 's' : ''}
-                    </p>
                   </div>
-                  {profile?.role === 'developer' && (
-                    <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => startEdit(project)}>
-                      Editar
-                    </button>
+
+                  {expanded === project.id && (
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '0.5px solid #e0e0db' }}>
+                      <p style={{ fontSize: 12, color: '#6b6b67', marginBottom: 10 }}>Testers apuntados:</p>
+                      {!testerNames[project.id] ? (
+                        <p style={{ fontSize: 13, color: '#9e9e9a' }}>Cargando...</p>
+                      ) : testerNames[project.id].length === 0 ? (
+                        <p style={{ fontSize: 13, color: '#9e9e9a' }}>Aún no hay testers apuntados.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {testerNames[project.id].map((name, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f7f6f3', borderRadius: 8 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e0e0db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: '#6b6b67' }}>
+                                {name[0]?.toUpperCase()}
+                              </div>
+                              <span style={{ fontSize: 14 }}>{name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
