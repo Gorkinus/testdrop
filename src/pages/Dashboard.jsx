@@ -21,26 +21,32 @@ export default function Dashboard() {
   const [onlineCount, setOnlineCount] = useState(0)
 
   useEffect(() => {
-    if (profile) { fetchData(); trackPresence() }
+    if (profile) {
+      fetchData()
+      const cleanup = trackPresence()
+      return cleanup
+    }
   }, [profile])
 
   function trackPresence() {
     const channel = supabase.channel('dashboard-presence', {
       config: { presence: { key: user.id } }
     })
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        const online = {}
-        Object.values(state).flat().forEach(p => { online[p.user_id] = p.name })
-        setOnlineUsers(online)
-        setOnlineCount(Object.keys(online).length)
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ user_id: user.id, name: profile?.name })
-        }
-      })
+
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState()
+      const online = {}
+      Object.values(state).flat().forEach(p => { online[p.user_id] = p.name })
+      setOnlineUsers(online)
+      setOnlineCount(Object.keys(online).length)
+    })
+
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({ user_id: user.id, name: profile?.name })
+      }
+    })
+
     return () => supabase.removeChannel(channel)
   }
 
