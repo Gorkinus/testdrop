@@ -32,16 +32,15 @@ export default function Admin() {
     const channel = supabase.channel('online-users', {
       config: { presence: { key: user.id } }
     })
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        setOnlineCount(Object.keys(state).length)
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ user_id: user.id, online_at: new Date().toISOString() })
-        }
-      })
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState()
+      setOnlineCount(Object.keys(state).length)
+    })
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({ user_id: user.id, online_at: new Date().toISOString() })
+      }
+    })
   }
 
   async function deleteUser(id) {
@@ -52,7 +51,7 @@ export default function Admin() {
 
   async function deleteProject(id) {
     if (!confirm('¿Seguro que quieres borrar este proyecto?')) return
-    await supabase.from('projects').delete().eq('id', id)
+    await supabase.rpc('delete_project_completely', { project_id: id })
     setProjects(prev => prev.filter(p => p.id !== id))
   }
 
