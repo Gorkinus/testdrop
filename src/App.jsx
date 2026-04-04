@@ -12,6 +12,7 @@ import Profile from './pages/Profile'
 import ResetPassword from './pages/ResetPassword'
 import Admin from './pages/Admin'
 import Chat from './pages/Chat'
+import Progress from './pages/Progress'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/chat/:projectId" element={<Chat />} />
+            <Route path="/progress/:projectId" element={<Progress />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
