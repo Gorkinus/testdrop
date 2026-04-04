@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 
 export default function Progress() {
   const { projectId } = useParams()
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [project, setProject] = useState(null)
   const [myProgress, setMyProgress] = useState([])
@@ -16,9 +16,9 @@ export default function Progress() {
   const [isOwner, setIsOwner] = useState(false)
 
   useEffect(() => {
-    if (!user || !profile) return
+    if (!user) { navigate('/login'); return }
     fetchAll()
-  }, [projectId, user, profile])
+  }, [projectId, user])
 
   async function fetchAll() {
     setLoading(true)
