@@ -13,7 +13,7 @@ export default function Progress() {
   const [testers, setTesters] = useState([])
   const [loading, setLoading] = useState(true)
   const [marking, setMarking] = useState(false)
-  const isOwner = project?.developer_id === user?.id
+  const [isOwner, setIsOwner] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -21,14 +21,23 @@ export default function Progress() {
   }, [projectId, user])
 
   async function fetchAll() {
-    const { data: proj } = await supabase.from('projects').select('*').eq('id', projectId).single()
-    setProject(proj)
+    setLoading(true)
 
-    const { data: progress } = await supabase.from('testing_progress').select('*').eq('project_id', projectId)
+    const { data: proj } = await supabase
+      .from('projects').select('*').eq('id', projectId).single()
+
+    if (!proj) { setLoading(false); return }
+
+    setProject(proj)
+    const owner = proj.developer_id === user.id
+    setIsOwner(owner)
+
+    const { data: progress } = await supabase
+      .from('testing_progress').select('*').eq('project_id', projectId)
     setAllProgress(progress || [])
     setMyProgress((progress || []).filter(p => p.tester_id === user.id).map(p => p.day))
 
-    if (proj?.developer_id === user.id) {
+    if (owner) {
       const { data: testerData } = await supabase
         .from('project_testers')
         .select('tester_id, profiles(id, name)')
@@ -53,7 +62,9 @@ export default function Progress() {
       setMyProgress(prev => prev.filter(d => d !== day))
       setAllProgress(prev => prev.filter(p => !(p.tester_id === user.id && p.day === day)))
     } else {
-      await supabase.from('testing_progress').insert({ project_id: projectId, tester_id: user.id, day })
+      await supabase.from('testing_progress').insert({
+        project_id: projectId, tester_id: user.id, day
+      })
       setMyProgress(prev => [...prev, day])
       setAllProgress(prev => [...prev, { project_id: projectId, tester_id: user.id, day }])
     }
@@ -76,12 +87,19 @@ export default function Progress() {
 
   if (loading) return <div style={{ padding: '3rem 2rem', color: '#9e9e9a', fontSize: 14 }}>Cargando...</div>
 
+  if (!project) return (
+    <div style={{ padding: '3rem 2rem', textAlign: 'center', color: '#9e9e9a', fontSize: 14 }}>
+      Proyecto no encontrado.
+    </div>
+  )
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '2.5rem 2rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '2rem' }}>
-        <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b6b67' }}>←</button>
+        <button onClick={() => navigate('/dashboard')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b6b67' }}>←</button>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 500 }}>{project?.title}</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 500 }}>{project.title}</h1>
           <p style={{ fontSize: 13, color: '#9e9e9a' }}>Progreso de testing — {totalDays} días</p>
         </div>
       </div>
@@ -100,7 +118,8 @@ export default function Progress() {
                 <button key={day} onClick={() => available && !marking && toggleDay(day)}
                   title={`Día ${day}`}
                   style={{
-                    width: 36, height: 36, borderRadius: 8, border: 'none', cursor: available ? 'pointer' : 'default',
+                    width: 36, height: 36, borderRadius: 8, border: 'none',
+                    cursor: available ? 'pointer' : 'default',
                     background: checked ? '#1a1a18' : available ? '#f7f6f3' : '#f0ede8',
                     color: checked ? '#fff' : available ? '#1a1a18' : '#ccc',
                     fontSize: 12, fontWeight: 500, transition: 'all 0.15s'
@@ -116,45 +135,48 @@ export default function Progress() {
         </div>
       )}
 
-      {isOwner && testers.length > 0 && (
+      {isOwner && (
         <div style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1.5rem' }}>
-          <p style={{ fontSize: 14, fontWeight: 500, marginBottom: '1rem' }}>Progreso de testers</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {testers.map(tester => {
-              const progress = getTesterProgress(tester.id)
-              return (
-                <div key={tester.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e0e0db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: '#6b6b67' }}>
-                        {tester.name?.[0]?.toUpperCase()}
+          <p style={{ fontSize: 14, fontWeight: 500, marginBottom: '1rem' }}>
+            Progreso de testers {testers.length > 0 ? `(${testers.length})` : ''}
+          </p>
+          {testers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#9e9e9a', fontSize: 14 }}>
+              Aún no hay testers apuntados a este proyecto.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {testers.map(tester => {
+                const progress = getTesterProgress(tester.id)
+                return (
+                  <div key={tester.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e0e0db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: '#6b6b67' }}>
+                          {tester.name?.[0]?.toUpperCase()}
+                        </div>
+                        <span style={{ fontSize: 14 }}>{tester.name}</span>
                       </div>
-                      <span style={{ fontSize: 14 }}>{tester.name}</span>
+                      <span style={{ fontSize: 12, color: '#6b6b67', fontFamily: 'monospace' }}>{progress.length}/{totalDays}</span>
                     </div>
-                    <span style={{ fontSize: 12, color: '#6b6b67', fontFamily: 'monospace' }}>{progress.length}/{totalDays}</span>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => (
+                        <div key={day} style={{
+                          width: 28, height: 28, borderRadius: 6,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: progress.includes(day) ? '#eaf3de' : '#f7f6f3',
+                          color: progress.includes(day) ? '#3b6d11' : '#ccc',
+                          fontSize: 11, fontWeight: 500
+                        }}>
+                          {progress.includes(day) ? '✓' : day}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => (
-                      <div key={day} style={{
-                        width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: progress.includes(day) ? '#eaf3de' : '#f7f6f3',
-                        color: progress.includes(day) ? '#3b6d11' : '#ccc',
-                        fontSize: 11, fontWeight: 500
-                      }}>
-                        {progress.includes(day) ? '✓' : day}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {isOwner && testers.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#9e9e9a', fontSize: 14 }}>
-          Aún no hay testers apuntados a este proyecto.
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
