@@ -14,7 +14,12 @@ export default function Admin() {
 
   useEffect(() => {
     if (profile && !profile.is_admin) navigate('/')
-    if (profile?.is_admin) { fetchUsers(); fetchProjects(); trackOnline() }
+    if (profile?.is_admin) {
+      fetchUsers()
+      fetchProjects()
+      const cleanup = trackOnline()
+      return cleanup
+    }
   }, [profile])
 
   async function fetchUsers() {
@@ -41,6 +46,7 @@ export default function Admin() {
         await channel.track({ user_id: user.id, online_at: new Date().toISOString() })
       }
     })
+    return () => supabase.removeChannel(channel)
   }
 
   async function deleteUser(id) {
