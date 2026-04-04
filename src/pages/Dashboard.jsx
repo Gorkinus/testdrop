@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useI18n } from '../i18n'
 
 const PLATFORMS = ['Android', 'iOS', 'Windows', 'Mac', 'Linux']
 
 export default function Dashboard() {
   const { profile, user } = useAuth()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [testers, setTesters] = useState({})
@@ -109,36 +111,36 @@ export default function Dashboard() {
 
   function timeAgo(date) {
     const days = Math.floor((Date.now() - new Date(date)) / 86400000)
-    if (days === 0) return 'hoy'
-    if (days === 1) return 'hace 1 día'
-    return `hace ${days} días`
+    if (days === 0) return t.dashboard.today
+    if (days === 1) return t.dashboard.yesterday
+    return t.dashboard.daysAgo.replace('{n}', days)
   }
 
   const myProjects = projects.filter(p => p.developer_id === user.id)
   const joinedProjects = projects.filter(p => p.developer_id !== user.id)
   const otherOnline = Object.entries(onlineUsers).filter(([id]) => id !== user.id)
 
-  if (loading) return <div style={{ padding: '3rem 2rem', color: '#9e9e9a', fontSize: 14 }}>Cargando...</div>
+  if (loading) return <div style={{ padding: '3rem 2rem', color: '#9e9e9a', fontSize: 14 }}>{t.dashboard.loading}</div>
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '2.5rem 2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Hola, {profile?.name}</h1>
-          <p style={{ fontSize: 14, color: '#6b6b67' }}>Panel de usuario</p>
+          <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>{t.dashboard.hello} {profile?.name}</h1>
+          <p style={{ fontSize: 14, color: '#6b6b67' }}>{t.dashboard.developer}</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link to="/new-project"><button className="btn-primary">+ Nuevo proyecto</button></Link>
-          <Link to="/profile"><button className="btn-outline">Mi perfil</button></Link>
+          <Link to="/new-project"><button className="btn-primary">{t.dashboard.newProject}</button></Link>
+          <Link to="/profile"><button className="btn-outline">{t.dashboard.myProfile}</button></Link>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 12, marginBottom: '2rem' }}>
         {[
-          { label: 'Mis proyectos', value: myProjects.length },
-          { label: 'Abiertos', value: myProjects.filter(p => p.status === 'open').length },
-          { label: 'Testeando', value: joinedProjects.length },
-          { label: 'Total testers', value: Object.values(testers).reduce((a, b) => a + b, 0) },
+          { label: t.dashboard.totalProjects, value: myProjects.length },
+          { label: t.dashboard.openProjects, value: myProjects.filter(p => p.status === 'open').length },
+          { label: t.dashboard.tester, value: joinedProjects.length },
+          { label: t.dashboard.totalTesters, value: Object.values(testers).reduce((a, b) => a + b, 0) },
           { label: 'Conectados ahora', value: onlineCount },
         ].map(s => (
           <div key={s.label} style={{ background: '#f7f6f3', borderRadius: 8, padding: '1rem' }}>
@@ -164,26 +166,26 @@ export default function Dashboard() {
 
       {myProjects.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: 15, fontWeight: 500, marginBottom: 12, color: '#6b6b67' }}>Mis proyectos</h2>
+          <h2 style={{ fontSize: 15, fontWeight: 500, marginBottom: 12, color: '#6b6b67' }}>{t.dashboard.totalProjects}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {myProjects.map(project => (
               <div key={project.id} style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1.25rem' }}>
                 {editing === project.id ? (
                   <div>
                     <div style={{ marginBottom: 12 }}>
-                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Título</label>
+                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>{t.dashboard.titleLabel}</label>
                       <input value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
                         style={{ width: '100%', padding: '8px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 14, fontFamily: 'inherit' }} />
                     </div>
                     <div style={{ marginBottom: 12 }}>
-                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Descripción</label>
+                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>{t.dashboard.descLabel}</label>
                       <textarea value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})}
                         rows={3} style={{ width: '100%', padding: '8px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
                     </div>
                     <div style={{ marginBottom: 12 }}>
-                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Tipo</label>
+                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>{t.dashboard.typeLabel}</label>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        {[['app','📱 Aplicación'],['game','🎮 Juego']].map(([val, label]) => (
+                        {[['app', t.dashboard.app], ['game', t.dashboard.game]].map(([val, label]) => (
                           <button key={val} type="button" onClick={() => setEditForm({...editForm, type: val})}
                             style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.type === val ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.type === val ? '#1a1a18' : '#fff', color: editForm.type === val ? '#fff' : '#666' }}>
                             {label}
@@ -192,7 +194,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div style={{ marginBottom: 12 }}>
-                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Plataformas</label>
+                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>{t.dashboard.platformsLabel}</label>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {PLATFORMS.map(p => (
                           <button key={p} type="button" onClick={() => togglePlatform(p)}
@@ -203,9 +205,9 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div style={{ marginBottom: 16 }}>
-                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Estado</label>
+                      <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>{t.dashboard.statusLabel}</label>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        {[['open','🟢 Abierto'],['closed','🔴 Cerrado']].map(([val, label]) => (
+                        {[['open', t.dashboard.open], ['closed', t.dashboard.closed]].map(([val, label]) => (
                           <button key={val} type="button" onClick={() => setEditForm({...editForm, status: val})}
                             style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.status === val ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.status === val ? '#1a1a18' : '#fff', color: editForm.status === val ? '#fff' : '#666' }}>
                             {label}
@@ -215,10 +217,10 @@ export default function Dashboard() {
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn-primary" style={{ flex: 1, padding: '9px' }} onClick={() => saveEdit(project.id)} disabled={saving}>
-                        {saving ? 'Guardando...' : 'Guardar cambios'}
+                        {saving ? t.dashboard.saving : t.dashboard.saveBtn}
                       </button>
                       <button className="btn-outline" style={{ flex: 1, padding: '9px' }} onClick={() => setEditing(null)}>
-                        Cancelar
+                        {t.dashboard.cancel}
                       </button>
                     </div>
                   </div>
@@ -229,7 +231,7 @@ export default function Dashboard() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                           <h3 style={{ fontSize: 14, fontWeight: 500 }}>{project.title}</h3>
                           <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '3px 8px', borderRadius: 100, background: project.status === 'open' ? '#eaf3de' : '#f0ede8', color: project.status === 'open' ? '#3b6d11' : '#9e9e9a' }}>
-                            {project.status === 'open' ? 'abierto' : 'cerrado'}
+                            {project.status === 'open' ? t.projects.openBadge : t.projects.closedBadge}
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -245,27 +247,27 @@ export default function Dashboard() {
                       </div>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => loadTesters(project.id)}>
-                          {expanded === project.id ? 'Ocultar testers' : 'Ver testers'}
+                          {expanded === project.id ? t.dashboard.hideTesters : t.dashboard.viewTesters}
                         </button>
                         <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/progress/${project.id}`)}>
-                          📊 Progreso
+                          📊 {t.dashboard.totalProjects}
                         </button>
                         <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/chat/${project.id}`)}>
                           💬 Chat
                         </button>
                         <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => startEdit(project)}>
-                          Editar
+                          {t.dashboard.edit}
                         </button>
                       </div>
                     </div>
 
                     {expanded === project.id && (
                       <div style={{ marginTop: 16, paddingTop: 16, borderTop: '0.5px solid #e0e0db' }}>
-                        <p style={{ fontSize: 12, color: '#6b6b67', marginBottom: 10 }}>Testers apuntados:</p>
+                        <p style={{ fontSize: 12, color: '#6b6b67', marginBottom: 10 }}>{t.dashboard.testersLabel}</p>
                         {!testerNames[project.id] ? (
-                          <p style={{ fontSize: 13, color: '#9e9e9a' }}>Cargando...</p>
+                          <p style={{ fontSize: 13, color: '#9e9e9a' }}>{t.dashboard.loadingTesters}</p>
                         ) : testerNames[project.id].length === 0 ? (
-                          <p style={{ fontSize: 13, color: '#9e9e9a' }}>Aún no hay testers apuntados.</p>
+                          <p style={{ fontSize: 13, color: '#9e9e9a' }}>{t.dashboard.noTesters}</p>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {testerNames[project.id].map((name, i) => {
@@ -298,7 +300,7 @@ export default function Dashboard() {
 
       {joinedProjects.length > 0 && (
         <div>
-          <h2 style={{ fontSize: 15, fontWeight: 500, marginBottom: 12, color: '#6b6b67' }}>Proyectos que testeo</h2>
+          <h2 style={{ fontSize: 15, fontWeight: 500, marginBottom: 12, color: '#6b6b67' }}>{t.dashboard.tester}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {joinedProjects.map(project => project && (
               <div key={project.id} style={{ background: '#fff', border: '0.5px solid #e0e0db', borderRadius: 12, padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -306,7 +308,7 @@ export default function Dashboard() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                     <h3 style={{ fontSize: 14, fontWeight: 500 }}>{project.title}</h3>
                     <span style={{ fontFamily: 'monospace', fontSize: 10, padding: '3px 8px', borderRadius: 100, background: project.status === 'open' ? '#eaf3de' : '#f0ede8', color: project.status === 'open' ? '#3b6d11' : '#9e9e9a' }}>
-                      {project.status === 'open' ? 'abierto' : 'cerrado'}
+                      {project.status === 'open' ? t.projects.openBadge : t.projects.closedBadge}
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -322,7 +324,7 @@ export default function Dashboard() {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/progress/${project.id}`)}>
-                    📊 Progreso
+                    📊 {t.dashboard.totalProjects}
                   </button>
                   <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/chat/${project.id}`)}>
                     💬 Chat
@@ -336,10 +338,10 @@ export default function Dashboard() {
 
       {projects.length === 0 && (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <p style={{ color: '#9e9e9a', fontSize: 14, marginBottom: '1rem' }}>Aún no tienes actividad.</p>
+          <p style={{ color: '#9e9e9a', fontSize: 14, marginBottom: '1rem' }}>{t.dashboard.emptyDev}</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <Link to="/new-project"><button className="btn-primary">Publicar proyecto</button></Link>
-            <Link to="/projects"><button className="btn-outline">Explorar proyectos</button></Link>
+            <Link to="/new-project"><button className="btn-primary">{t.dashboard.firstProject}</button></Link>
+            <Link to="/projects"><button className="btn-outline">{t.dashboard.exploreProjects}</button></Link>
           </div>
         </div>
       )}
