@@ -16,9 +16,9 @@ export default function Progress() {
   const [isOwner, setIsOwner] = useState(false)
 
   useEffect(() => {
-    if (!user) { navigate('/login'); return }
+    if (!user || !profile) return
     fetchAll()
-  }, [projectId, user])
+  }, [projectId, user, profile])
 
   async function fetchAll() {
     setLoading(true)
