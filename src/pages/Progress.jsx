@@ -22,9 +22,11 @@ export default function Progress() {
 
   async function fetchAll() {
     setLoading(true)
+    console.log('fetchAll called, projectId:', projectId, 'user:', user?.id)
 
-    const { data: proj } = await supabase
+    const { data: proj, error: projError } = await supabase
       .from('projects').select('*').eq('id', projectId).single()
+    console.log('project data:', proj, 'error:', projError)
 
     if (!proj) { setLoading(false); return }
 
