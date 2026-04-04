@@ -51,13 +51,19 @@ export default function Dashboard() {
   }
 
   async function fetchData() {
+    setLoading(true)
     const { data } = await supabase
       .from('projects').select('*').eq('developer_id', user.id).order('created_at', { ascending: false })
     const joined = await supabase.from('project_testers').select('*, projects(*)').eq('tester_id', user.id).order('joined_at', { ascending: false })
 
     const myProjects = data || []
-    const joinedProjects = (joined.data || []).map(d => d.projects).filter(p => p && !myProjects.find(mp => mp.id === p.id))
+    const joinedProjects = (joined.data || [])
+      .map(d => d.projects)
+      .filter(p => p && !myProjects.find(mp => mp.id === p.id))
+
     setProjects([...myProjects, ...joinedProjects])
+    setTesterNames({})
+    setTesterIds({})
 
     for (const p of myProjects) {
       const { count } = await supabase.from('project_testers').select('*', { count: 'exact', head: true }).eq('project_id', p.id)
