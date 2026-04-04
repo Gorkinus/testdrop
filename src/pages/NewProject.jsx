@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import styles from './Auth.module.css'
 
-const PLATFORMS = ['Android', 'iOS', 'PC / Mac']
+const PLATFORMS = ['Android', 'iOS', 'Windows', 'Mac', 'Linux']
 
 export default function NewProject() {
   const { user } = useAuth()

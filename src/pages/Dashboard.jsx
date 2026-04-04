@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
-const PLATFORMS = ['Android', 'iOS', 'PC / Mac', 'Juegos']
+const PLATFORMS = ['Android', 'iOS', 'Windows', 'Mac', 'Linux']
 
 export default function Dashboard() {
   const { profile, user } = useAuth()
@@ -32,7 +32,6 @@ export default function Dashboard() {
     const channel = supabase.channel('dashboard-presence', {
       config: { presence: { key: user.id } }
     })
-
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState()
       const online = {}
@@ -40,13 +39,11 @@ export default function Dashboard() {
       setOnlineUsers(online)
       setOnlineCount(Object.keys(online).length)
     })
-
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await channel.track({ user_id: user.id, name: profile?.name })
       }
     })
-
     return () => supabase.removeChannel(channel)
   }
 
@@ -186,10 +183,10 @@ export default function Dashboard() {
                     <div style={{ marginBottom: 12 }}>
                       <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Tipo</label>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        {['app', 'game'].map(t => (
-                          <button key={t} type="button" onClick={() => setEditForm({...editForm, type: t})}
-                            style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.type === t ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.type === t ? '#1a1a18' : '#fff', color: editForm.type === t ? '#fff' : '#666' }}>
-                            {t === 'app' ? '📱 Aplicación' : '🎮 Juego'}
+                        {[['app','📱 Aplicación'],['game','🎮 Juego']].map(([val, label]) => (
+                          <button key={val} type="button" onClick={() => setEditForm({...editForm, type: val})}
+                            style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.type === val ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.type === val ? '#1a1a18' : '#fff', color: editForm.type === val ? '#fff' : '#666' }}>
+                            {label}
                           </button>
                         ))}
                       </div>
@@ -208,10 +205,10 @@ export default function Dashboard() {
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ fontSize: 12, color: '#6b6b67', display: 'block', marginBottom: 4 }}>Estado</label>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        {['open', 'closed'].map(s => (
-                          <button key={s} type="button" onClick={() => setEditForm({...editForm, status: s})}
-                            style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.status === s ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.status === s ? '#1a1a18' : '#fff', color: editForm.status === s ? '#fff' : '#666' }}>
-                            {s === 'open' ? '🟢 Abierto' : '🔴 Cerrado'}
+                        {[['open','🟢 Abierto'],['closed','🔴 Cerrado']].map(([val, label]) => (
+                          <button key={val} type="button" onClick={() => setEditForm({...editForm, status: val})}
+                            style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontSize: 13, border: editForm.status === val ? '2px solid #1a1a18' : '1px solid #ccc', background: editForm.status === val ? '#1a1a18' : '#fff', color: editForm.status === val ? '#fff' : '#666' }}>
+                            {label}
                           </button>
                         ))}
                       </div>
@@ -242,6 +239,8 @@ export default function Dashboard() {
                         </div>
                         <p style={{ fontSize: 12, color: '#9e9e9a' }}>
                           {timeAgo(project.created_at)} · {testers[project.id] || 0} testers
+                          {project.duration && ` · ${project.duration} días`}
+                          {project.tested_by_dev !== undefined && ` · ${project.tested_by_dev ? '✅ Probada' : '❌ Sin probar'}`}
                         </p>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
@@ -312,7 +311,11 @@ export default function Dashboard() {
                       <span key={p} style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 100, border: '0.5px solid #e0e0db', color: '#6b6b67' }}>{p}</span>
                     ))}
                   </div>
-                  <p style={{ fontSize: 12, color: '#9e9e9a' }}>{timeAgo(project.created_at)}</p>
+                  <p style={{ fontSize: 12, color: '#9e9e9a' }}>
+                    {timeAgo(project.created_at)}
+                    {project.duration && ` · ${project.duration} días`}
+                    {project.tested_by_dev !== undefined && ` · ${project.tested_by_dev ? '✅ Probada' : '❌ Sin probar'}`}
+                  </p>
                 </div>
                 <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/chat/${project.id}`)}>
                   💬 Chat
