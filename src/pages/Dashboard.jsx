@@ -243,9 +243,12 @@ export default function Dashboard() {
                           {project.tested_by_dev !== undefined && ` · ${project.tested_by_dev ? '✅ Probada' : '❌ Sin probar'}`}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => loadTesters(project.id)}>
                           {expanded === project.id ? 'Ocultar testers' : 'Ver testers'}
+                        </button>
+                        <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/progress/${project.id}`)}>
+                          📊 Progreso
                         </button>
                         <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/chat/${project.id}`)}>
                           💬 Chat
@@ -317,9 +320,14 @@ export default function Dashboard() {
                     {project.tested_by_dev !== undefined && ` · ${project.tested_by_dev ? '✅ Probada' : '❌ Sin probar'}`}
                   </p>
                 </div>
-                <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/chat/${project.id}`)}>
-                  💬 Chat
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/progress/${project.id}`)}>
+                    📊 Progreso
+                  </button>
+                  <button className="btn-outline" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => navigate(`/chat/${project.id}`)}>
+                    💬 Chat
+                  </button>
+                </div>
               </div>
             ))}
           </div>
