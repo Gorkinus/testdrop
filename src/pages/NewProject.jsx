@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useI18n } from '../i18n'
 import styles from './Auth.module.css'
 
 const PLATFORMS = ['Android', 'iOS', 'Windows', 'Mac', 'Linux']
 
 export default function NewProject() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [form, setForm] = useState({
     title: '',
@@ -47,33 +49,33 @@ export default function NewProject() {
   return (
     <div className={styles.wrap}>
       <div className={styles.card} style={{maxWidth:520}}>
-        <h2 className={styles.title}>Nuevo proyecto</h2>
-        <p className={styles.sub}>Publica tu app o juego para encontrar testers</p>
+        <h2 className={styles.title}>{t.newProject.title}</h2>
+        <p className={styles.sub}>{t.newProject.sub}</p>
         <form onSubmit={handleSubmit}>
 
           <div className={styles.field}>
-            <label>Título</label>
+            <label>{t.newProject.titleLabel}</label>
             <input value={form.title} onChange={e => setForm({...form, title: e.target.value})}
-              placeholder="Nombre de tu app o juego" required />
+              placeholder={t.newProject.titlePlaceholder} required />
           </div>
 
           <div className={styles.field}>
-            <label>Descripción</label>
+            <label>{t.newProject.descLabel}</label>
             <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})}
-              placeholder="Qué hace tu app y qué quieres que prueben los testers..."
+              placeholder={t.newProject.descPlaceholder}
               rows={3} style={{resize:'vertical',width:'100%',padding:'9px 12px',border:'0.5px solid #ccc',borderRadius:8,fontFamily:'inherit',fontSize:14,outline:'none'}} />
           </div>
 
           <div className={styles.field}>
-            <label>Enlace de descarga</label>
+            <label>{t.newProject.downloadLabel}</label>
             <input value={form.download_url} onChange={e => setForm({...form, download_url: e.target.value})}
-              placeholder="https://play.google.com/... o enlace directo" />
+              placeholder={t.newProject.downloadPlaceholder} />
           </div>
 
           <div className={styles.field}>
-            <label>Tipo</label>
+            <label>{t.newProject.typeLabel}</label>
             <div style={{display:'flex',gap:10}}>
-              {[['app','📱 Aplicación'],['game','🎮 Juego']].map(([val, label]) => (
+              {[['app', t.newProject.app],['game', t.newProject.game]].map(([val, label]) => (
                 <button key={val} type="button" onClick={() => setForm({...form, type: val})}
                   style={{flex:1,padding:'9px',borderRadius:8,cursor:'pointer',fontSize:13,
                     border: form.type===val ? '2px solid #1a1a18' : '1px solid #ccc',
@@ -87,7 +89,7 @@ export default function NewProject() {
           </div>
 
           <div className={styles.field}>
-            <label>Plataformas</label>
+            <label>{t.newProject.platformsLabel}</label>
             <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>
               {PLATFORMS.map(p => (
                 <button key={p} type="button" onClick={() => togglePlatform(p)}
@@ -138,7 +140,7 @@ export default function NewProject() {
 
           <button type="submit" className="btn-primary"
             style={{width:'100%',padding:'11px',marginTop:8}} disabled={submitting}>
-            {submitting ? 'Publicando...' : 'Publicar proyecto'}
+            {submitting ? t.newProject.publishing : t.newProject.publishBtn}
           </button>
         </form>
       </div>
