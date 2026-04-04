@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useI18n } from '../i18n'
 
 export default function Projects() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [projects, setProjects] = useState([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -41,23 +43,23 @@ export default function Projects() {
 
   function timeAgo(date) {
     const days = Math.floor((Date.now() - new Date(date)) / 86400000)
-    if (days === 0) return 'hoy'
-    if (days === 1) return 'hace 1 día'
-    return `hace ${days} días`
+    if (days === 0) return t.dashboard.today
+    if (days === 1) return t.dashboard.yesterday
+    return t.dashboard.daysAgo.replace('{n}', days)
   }
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '2.5rem 2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Proyectos</h1>
-          <p style={{ fontSize: 14, color: '#6b6b67' }}>{filtered.length} proyecto{filtered.length !== 1 ? 's' : ''}</p>
+          <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>{t.projects.title}</h1>
+          <p style={{ fontSize: 14, color: '#6b6b67' }}>{filtered.length} {filtered.length !== 1 ? t.projects.title.toLowerCase() : t.projects.title.toLowerCase().slice(0,-1)}</p>
         </div>
-        {user && <Link to="/new-project"><button className="btn-primary">+ Publicar proyecto</button></Link>}
+        {user && <Link to="/new-project"><button className="btn-primary">{t.projects.publish}</button></Link>}
       </div>
 
       <div style={{ display: 'flex', gap: 0, border: '0.5px solid #e0e0db', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: '1.5rem' }}>
-        {[['all', 'Todos'], ['open', 'Abiertos'], ['closed', 'Cerrados']].map(([val, label]) => (
+        {[['all', t.projects.all], ['open', t.projects.open], ['closed', t.projects.closed]].map(([val, label]) => (
           <button key={val} onClick={() => setFilter(val)} style={{
             padding: '7px 16px', fontSize: 13, fontFamily: 'inherit',
             background: filter === val ? '#1a1a18' : 'transparent',
@@ -69,11 +71,11 @@ export default function Projects() {
       </div>
 
       {loading ? (
-        <p style={{ color: '#9e9e9a', fontSize: 14 }}>Cargando proyectos...</p>
+        <p style={{ color: '#9e9e9a', fontSize: 14 }}>{t.projects.loading}</p>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <p style={{ color: '#9e9e9a', fontSize: 14 }}>No hay proyectos todavía.</p>
-          {user && <Link to="/new-project"><button className="btn-outline" style={{ marginTop: '1rem' }}>Sé el primero en publicar</button></Link>}
+          <p style={{ color: '#9e9e9a', fontSize: 14 }}>{t.projects.empty}</p>
+          {user && <Link to="/new-project"><button className="btn-outline" style={{ marginTop: '1rem' }}>{t.projects.beFirst}</button></Link>}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 16 }}>
@@ -85,7 +87,7 @@ export default function Projects() {
                   fontFamily: 'monospace', fontSize: 10, padding: '3px 8px', borderRadius: 100,
                   background: project.status === 'open' ? '#eaf3de' : '#f0ede8',
                   color: project.status === 'open' ? '#3b6d11' : '#9e9e9a'
-                }}>{project.status === 'open' ? 'abierto' : 'cerrado'}</span>
+                }}>{project.status === 'open' ? t.projects.openBadge : t.projects.closedBadge}</span>
               </div>
 
               <p style={{ fontSize: 12, color: '#9e9e9a' }}>{timeAgo(project.created_at)}</p>
@@ -95,7 +97,9 @@ export default function Projects() {
                   <span key={p} style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 100, border: '0.5px solid #e0e0db', color: '#6b6b67' }}>{p}</span>
                 ))}
                 {project.type && (
-                  <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 100, border: '0.5px solid #e0e0db', color: '#6b6b67' }}>{project.type === 'game' ? 'Juego' : 'App'}</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 100, border: '0.5px solid #e0e0db', color: '#6b6b67' }}>
+                    {project.type === 'game' ? t.newProject.game : t.newProject.app}
+                  </span>
                 )}
               </div>
 
@@ -106,7 +110,7 @@ export default function Projects() {
               {project.download_url && (
                 <a href={project.download_url} target="_blank" rel="noreferrer"
                   style={{ display: 'block', textAlign: 'center', padding: '8px', borderRadius: 8, background: '#1a1a18', color: '#fff', fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
-                  ⬇ Descargar / Probar
+                  {t.projects.download}
                 </a>
               )}
 
@@ -121,7 +125,7 @@ export default function Projects() {
                   disabled={joined.includes(project.id)}
                   onClick={() => joinProject(project.id)}
                 >
-                  {joined.includes(project.id) ? '✓ Apuntado' : 'Apuntarme como tester'}
+                  {joined.includes(project.id) ? t.projects.joined : t.projects.joinBtn}
                 </button>
               )}
             </div>
