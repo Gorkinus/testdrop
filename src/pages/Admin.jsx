@@ -57,7 +57,7 @@ export default function Admin() {
 
   async function deleteProject(id) {
     if (!confirm('¿Seguro que quieres borrar este proyecto?')) return
-    await supabase.rpc('delete_project_completely', { project_id: id })
+    await supabase.rpc('delete_project_completely', { p_project_id: id })
     setProjects(prev => prev.filter(p => p.id !== id))
   }
 
